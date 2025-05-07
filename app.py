@@ -1,12 +1,11 @@
-import os
 from flask import Flask, request, jsonify
-import replicate
 from flask_cors import CORS
+import replicate
+import os
 
 app = Flask(__name__)
-CORS(app)  # Abilita CORS per consentire richieste dal frontend
+CORS(app)
 
-# Inizializza il client Replicate
 REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
@@ -19,19 +18,19 @@ def process_image():
     try:
         data = request.get_json()
         image_url = data.get("image_url")
-        style = data.get("style", "Modern")
-        room_type = data.get("room_type", "living room")
+        style = data.get("style")
+        room_type = data.get("room_type")
 
-        prompt = f"A {style} {room_type} interior design"
+        model = replicate_client.models.get("fofr/room-staging")
+        version = model.versions.get("cb1e1fd...")  # usa la versione corretta
 
-        # Eseguiamo il modello (es. scenex/room-staging)
-        model = replicate_client.models.get("scenex/room-staging")
-        version = model.versions.get("fc8b3e7f4cd9164c145482da2b3debf7689ff2c16e2bb1df89d5ee6837f35f48")
-        
-        output = version.predict(image=image_url, prompt=prompt)
+        output = version.predict(
+            image=image_url,
+            style=style,
+            room_type=room_type
+        )
 
         return jsonify(output=output)
-
     except Exception as e:
         return jsonify(error=str(e)), 500
 
