@@ -3,6 +3,7 @@ import logging
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import replicate
+from replicate.exceptions import ReplicateError
 
 # Configurazione per logging
 logging.basicConfig(level=logging.DEBUG)  # Imposta il livello di logging a DEBUG
@@ -51,7 +52,7 @@ def process_image():
             version = model.versions.get("2.0")  # Verifica se la versione 2.0 è corretta
             output = version.predict(prompt=f"A {room_type} styled in {style} with furniture", image=image_url)
             logger.debug(f"Elaborazione completata con successo. Output: {output}")
-        except replicate.errors.ReplicateError as e:
+        except ReplicateError as e:
             logger.error(f"Errore nel caricare il modello o la versione: {e}")
             return jsonify({"error": "Modello non trovato o errore nella versione."}), 404
 
