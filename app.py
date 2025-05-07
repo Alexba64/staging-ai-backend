@@ -17,23 +17,22 @@ def home():
 def process_image():
     try:
         data = request.get_json()
-        image_url = data.get("image_url")
-        style = data.get("style")
-        room_type = data.get("room_type")
+        image_url = data['image_url']
+        style = data['style']
+        room_type = data['room_type']
 
-        model = replicate_client.models.get("fofr/room-staging")
-        version = model.versions.get("cb1e1fd...")  # usa la versione corretta
+        # Modello stabile e attivo su Replicate
+        model = replicate_client.models.get("stability-ai/sdxl")
+        version = model.versions.get("c6fbd0fd885d8d5c77478f9f9c71d600b6fae50d7ee6f02b1860c66a1301705b")
 
-        output = version.predict(
-            image=image_url,
-            style=style,
-            room_type=room_type
-        )
+        prompt = f"interior of a {room_type} in {style} style"
 
-        return jsonify(output=output)
+        output = version.predict(prompt=prompt)
+
+        return jsonify(output=output[0])
     except Exception as e:
         return jsonify(error=str(e)), 500
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
