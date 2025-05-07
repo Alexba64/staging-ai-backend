@@ -50,13 +50,4 @@ def process_image():
         try:
             # Prova a caricare la versione 2.1 del modello
             try:
-                version = model.versions.get("2.1")  # Versione 2.1
-            except ReplicateError as e:
-                logger.error(f"Versione 2.1 non trovata, tentando con una versione diversa. Dettaglio errore: {e}")
-                version = model.versions.get("2.0")  # Prova la versione 2.0 se la 2.1 non è disponibile
-
-            output = version.predict(prompt=f"A {room_type} styled in {style} with furniture", image=image_url)
-            logger.debug(f"Elaborazione completata con successo. Output: {output}")
-        except ReplicateError as e:
-            logger.error(f"Errore nel caricare il modello o la versione: {e}")
-            return jsonify({"error": "Modello non trovato o errore nella versione."}), 404
+                version = model.versions.get("2.1")  # Versione 2.
