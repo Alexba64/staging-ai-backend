@@ -51,7 +51,7 @@ def process_image():
             # Prova a caricare la versione 2.1 del modello
             try:
                 version = model.versions.get("2.1")  # Versione 2.1
-            except replicate.errors.ReplicateError as e:
+            except ReplicateError as e:
                 logger.error(f"Versione 2.1 non trovata, tentando con una versione diversa. Dettaglio errore: {e}")
                 version = model.versions.get("2.0")  # Prova la versione 2.0 se la 2.1 non è disponibile
 
@@ -60,18 +60,3 @@ def process_image():
         except ReplicateError as e:
             logger.error(f"Errore nel caricare il modello o la versione: {e}")
             return jsonify({"error": "Modello non trovato o errore nella versione."}), 404
-
-        return jsonify({"output": output})
-
-    except Exception as e:
-        # Log dell'errore
-        logger.error(f"Errore durante l'elaborazione dell'immagine: {str(e)}")
-        return jsonify({"error": f"Errore: {str(e)}"}), 500
-
-if __name__ == "__main__":
-    # Log per tracciare l'avvio dell'app
-    logger.info("Avvio dell'app Flask...")
-
-    # L'app di Flask su Render deve ascoltare sulla porta specificata nell'ambiente
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
