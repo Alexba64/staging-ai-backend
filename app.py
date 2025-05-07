@@ -50,5 +50,5 @@ def upload_image():
 
 if __name__ == "__main__":
     # L'app di Flask su Render deve ascoltare sulla porta specificata nell'ambiente
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
