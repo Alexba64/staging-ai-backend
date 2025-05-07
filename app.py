@@ -43,17 +43,19 @@ def process_image():
         # Eseguiamo il modello di replicate
         logger.debug("Caricamento del modello...")
         
-        # Usa una versione corretta del modello (assicurati che sia la versione corretta!)
         model = replicate_client.models.get("stability-ai/stable-diffusion")
-        version = model.versions.get("2.0")  # Verifica la versione disponibile su Replicate
-        
-        # Log per tracciare il processo di previsione
-        logger.debug(f"Avvio del modello con prompt: 'A {room_type} styled in {style} with furniture'")
+        logger.debug("Modello caricato, ora eseguo la previsione...")
 
-        output = version.predict(prompt=f"A {room_type} styled in {style} with furniture", image=image_url)
+        # Sostituire con la versione corretta
+        try:
+            version = model.versions.get("2.0")  # Verifica se la versione 2.0 è corretta
+            output = version.predict(prompt=f"A {room_type} styled in {style} with furniture", image=image_url)
+            logger.debug(f"Elaborazione completata con successo. Output: {output}")
+        except replicate.errors.ReplicateError as e:
+            logger.error(f"Errore nel caricare il modello o la versione: {e}")
+            return jsonify({"error": "Modello non trovato o errore nella versione."}), 404
 
-        logger.debug("Elaborazione completata con successo.")
-        return jsonify({"output": output})  # Restituisce l'immagine generata come risultato
+        return jsonify({"output": output})
 
     except Exception as e:
         # Log dell'errore
@@ -67,4 +69,3 @@ if __name__ == "__main__":
     # L'app di Flask su Render deve ascoltare sulla porta specificata nell'ambiente
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
