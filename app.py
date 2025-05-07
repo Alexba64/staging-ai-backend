@@ -1,7 +1,12 @@
 import os
+import logging
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import replicate
+
+# Configurazione per logging
+logging.basicConfig(level=logging.DEBUG)  # Imposta il livello di logging a DEBUG
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -21,24 +26,44 @@ def home():
 @app.route('/process_image', methods=['POST'])
 def process_image():
     try:
+        # Log dei dati ricevuti
+        logger.debug("Ricevuta richiesta per /process_image")
+        
         data = request.get_json()  # Otteniamo i dati inviati dal frontend
+        logger.debug(f"Dati ricevuti: {data}")
+
         image_url = data.get('image_url')
         style = data.get('style')
         room_type = data.get('room_type')
 
-        # Eseguiamo il modello di replicate qui
-        model = replicate_client.models.get("stability-ai/stable-diffusion")
-        version = model.versions.get("2.1")
+        if not image_url or not style or not room_type:
+            logger.error("Dati incompleti: assicurati di inviare image_url, style, room_type.")
+            return jsonify({"error": "Dati incompleti."}), 400
 
-        # Parametri da passare al modello
+        # Eseguiamo il modello di replicate
+        logger.debug("Caricamento del modello...")
+        
+        # Usa una versione corretta del modello (assicurati che sia la versione corretta!)
+        model = replicate_client.models.get("stability-ai/stable-diffusion")
+        version = model.versions.get("2.0")  # Verifica la versione disponibile su Replicate
+        
+        # Log per tracciare il processo di previsione
+        logger.debug(f"Avvio del modello con prompt: 'A {room_type} styled in {style} with furniture'")
+
         output = version.predict(prompt=f"A {room_type} styled in {style} with furniture", image=image_url)
 
-        return jsonify({"output": output})  # Invia l'immagine generata come risultato
+        logger.debug("Elaborazione completata con successo.")
+        return jsonify({"output": output})  # Restituisce l'immagine generata come risultato
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        # Log dell'errore
+        logger.error(f"Errore durante l'elaborazione dell'immagine: {str(e)}")
+        return jsonify({"error": f"Errore: {str(e)}"}), 500
 
 if __name__ == "__main__":
+    # Log per tracciare l'avvio dell'app
+    logger.info("Avvio dell'app Flask...")
+
     # L'app di Flask su Render deve ascoltare sulla porta specificata nell'ambiente
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
