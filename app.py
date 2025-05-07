@@ -1,54 +1,40 @@
 import os
 from flask import Flask, request, jsonify
 import replicate
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)  # Abilita CORS per consentire richieste dal frontend
 
-# Inizializzazione del client per l'API di replicate
+# Inizializza il client Replicate
 REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
-# Definire una route per la home
 @app.route('/')
 def home():
     return jsonify(message="Benvenuto nel backend di staging AI!")
 
-# Endpoint per caricare un'immagine e ottenere una previsione
-@app.route('/upload_image', methods=['POST'])
-def upload_image():
+@app.route('/process_image', methods=['POST'])
+def process_image():
     try:
-        # Controllo che ci sia un file nell'input
-        if 'file' not in request.files:
-            return jsonify({"error": "Nessun file fornito"}), 400
-        
-        # Otteniamo il file caricato dal frontend
-        file = request.files['file']
-        
-        if file.filename == '':
-            return jsonify({"error": "Nome del file non valido"}), 400
-        
-        # Salviamo temporaneamente il file caricato
-        file_path = os.path.join("uploads", file.filename)
-        file.save(file_path)
-        
-        # Log per debug: stampa il nome del file
-        print(f"File caricato: {file.filename}")
+        data = request.get_json()
+        image_url = data.get("image_url")
+        style = data.get("style", "Modern")
+        room_type = data.get("room_type", "living room")
 
-        # Carichiamo il modello di Replicate
-        model = replicate_client.models.get("stability-ai/stable-diffusion")
-        version = model.versions.get("xx.xx.x")  # Assicurati di sostituire con la versione giusta
+        prompt = f"A {style} {room_type} interior design"
+
+        # Eseguiamo il modello (es. scenex/room-staging)
+        model = replicate_client.models.get("scenex/room-staging")
+        version = model.versions.get("fc8b3e7f4cd9164c145482da2b3debf7689ff2c16e2bb1df89d5ee6837f35f48")
         
-        # Eseguiamo la previsione passando l'immagine
-        output = version.predict(image=file_path)
-        
-        # Ritorniamo il risultato come risposta JSON
-        return jsonify(output)
-    
+        output = version.predict(image=image_url, prompt=prompt)
+
+        return jsonify(output=output)
+
     except Exception as e:
-        print(f"Errore durante l'elaborazione: {str(e)}")  # Aggiungi log di errore
         return jsonify(error=str(e)), 500
 
 if __name__ == "__main__":
-    # L'app di Flask su Render deve ascoltare sulla porta specificata nell'ambiente
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
