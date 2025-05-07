@@ -1,51 +1,44 @@
-import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import replicate
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-# Imposta il token API di Replicate (deve essere presente come variabile d'ambiente)
+# Carica API Key da variabili ambiente
 REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
+replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
-# Verifica che il token sia presente
-if not REPLICATE_API_TOKEN:
-    raise ValueError("La variabile REPLICATE_API_TOKEN non è stata impostata.")
-
-# Route principale
 @app.route('/')
 def home():
-    return jsonify(message="Benvenuto nel backend AI!")
+    return jsonify(message="Benvenuto nel backend di Staging AI!")
 
-# Route per processare l'immagine
 @app.route('/process_image', methods=['POST'])
 def process_image():
     try:
         data = request.get_json()
-
         image_url = data.get("image_url")
-        style = data.get("style")
-        room_type = data.get("room_type")
+        prompt = data.get("prompt")
 
-        if not image_url or not style or not room_type:
-            return jsonify(error="image_url, style e room_type sono richiesti."), 400
+        if not image_url or not prompt:
+            return jsonify(error="URL immagine o prompt mancanti"), 400
 
-        prompt = f"A {room_type} styled in {style}"
-
-        # Esegui il modello
+        # Esegui modello Replicate direttamente
         output = replicate.run(
-            "stability-ai/stable-diffusion-img2img",
+            "stability-ai/stable-diffusion-img2img:ac732df83cea7fff18b8472768c88ad041fa750ff7682a21affe81863cbe77e4",
             input={
                 "image": image_url,
                 "prompt": prompt,
-                "strength": 0.75,
-                "num_outputs": 1
+                "strength": 0.7,
+                "num_outputs": 1,
+                "guidance_scale": 7.5
             }
         )
 
-        return jsonify({"output": output})
-
+        # Output è una lista di URL
+        return jsonify(output=output[0])
+    
     except Exception as e:
         return jsonify(error=str(e)), 500
 
