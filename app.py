@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify
 import replicate
 
 app = Flask(__name__)
@@ -13,20 +13,39 @@ replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 def home():
     return jsonify(message="Benvenuto nel backend di staging AI!")
 
-# Esempio di endpoint per ottenere una previsione da un modello di replicate
-@app.route('/get_model_output')
-def get_model_output():
+# Endpoint per caricare un'immagine e ottenere una previsione
+@app.route('/upload_image', methods=['POST'])
+def upload_image():
     try:
-        # Eseguiamo il modello di replicate qui
-        model = replicate_client.models.get("stability-ai/stable-diffusion")
-        version = model.versions.get("xx.xx.x")
+        # Controllo che ci sia un file nell'input
+        if 'file' not in request.files:
+            return jsonify({"error": "Nessun file fornito"}), 400
         
-        # Parametri da passare al modello
-        output = version.predict(prompt="A beautiful living room with modern furniture")
+        # Otteniamo il file caricato dal frontend
+        file = request.files['file']
+        
+        if file.filename == '':
+            return jsonify({"error": "Nome del file non valido"}), 400
+        
+        # Salviamo temporaneamente il file caricato
+        file_path = os.path.join("uploads", file.filename)
+        file.save(file_path)
+        
+        # Log per debug: stampa il nome del file
+        print(f"File caricato: {file.filename}")
 
+        # Carichiamo il modello di Replicate
+        model = replicate_client.models.get("stability-ai/stable-diffusion")
+        version = model.versions.get("xx.xx.x")  # Assicurati di sostituire con la versione giusta
+        
+        # Eseguiamo la previsione passando l'immagine
+        output = version.predict(image=file_path)
+        
+        # Ritorniamo il risultato come risposta JSON
         return jsonify(output)
     
     except Exception as e:
+        print(f"Errore durante l'elaborazione: {str(e)}")  # Aggiungi log di errore
         return jsonify(error=str(e)), 500
 
 if __name__ == "__main__":
