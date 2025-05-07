@@ -47,9 +47,14 @@ def process_image():
         model = replicate_client.models.get("stability-ai/stable-diffusion")
         logger.debug("Modello caricato, ora eseguo la previsione...")
 
-        # Verifica e usa la versione corretta
         try:
-            version = model.versions.get("2.1")  # Sostituisci con la versione 2.1, come discusso
+            # Prova a caricare la versione 2.1 del modello
+            try:
+                version = model.versions.get("2.1")  # Versione 2.1
+            except replicate.errors.ReplicateError as e:
+                logger.error(f"Versione 2.1 non trovata, tentando con una versione diversa. Dettaglio errore: {e}")
+                version = model.versions.get("2.0")  # Prova la versione 2.0 se la 2.1 non è disponibile
+
             output = version.predict(prompt=f"A {room_type} styled in {style} with furniture", image=image_url)
             logger.debug(f"Elaborazione completata con successo. Output: {output}")
         except ReplicateError as e:
